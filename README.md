@@ -1,13 +1,13 @@
 # Tunnel Studio — KANO 双协议插件
 
-从零实现的 WireGuard / AmneziaWG 管理控制台，版本 **0.1.0（联调预览版）**。管理页、设备管理程序、资源所有权、构建和测试均为独立新实现。没有复制旧 WireGuard 插件或上一轮草稿的 UI、管理脚本或测试。本项目独立发布，不修改旧 WireGuard 仓库。
+从零实现的 WireGuard / AmneziaWG 管理控制台，版本 **0.1.1（联调预览版）**。管理页、设备管理程序、资源所有权、构建和测试均为独立新实现。没有复制旧 WireGuard 插件或上一轮草稿的 UI、管理脚本或测试。本项目独立发布，不修改旧 WireGuard 仓库。
 
 ## 下载与使用
 
-- [下载 v0.1.0 单文件插件](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.0/tunnel-studio.js)
-- [下载完整源码与构建包](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.0/tunnel-studio-0.1.0.zip)
-- [浏览器直接读取 JS](https://raw.githubusercontent.com/BearHero520/tunnel-studio/v0.1.0/dist/tunnel-studio.js)
-- [发行说明与 SHA-256 校验文件](https://github.com/BearHero520/tunnel-studio/releases/tag/v0.1.0)
+- [下载 v0.1.1 单文件插件](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.1/tunnel-studio.js)
+- [下载完整源码与构建包](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.1/tunnel-studio-0.1.1.zip)
+- [浏览器直接读取 JS](https://raw.githubusercontent.com/BearHero520/tunnel-studio/v0.1.1/dist/tunnel-studio.js)
+- [发行说明与 SHA-256 校验文件](https://github.com/BearHero520/tunnel-studio/releases/tag/v0.1.1)
 
 - **导入 KANO 的单文件：`dist/tunnel-studio.js`**，约 2.3 MB，内置 gzip 压缩的 Android ARM64 可执行程序。安装时不从互联网下载后端。
 - `docs/desktop.png` / `docs/phone.png` 是本实现的界面截图，数据来自明确标记的 UI 测试宿主，不是真机代理状态。
@@ -89,3 +89,7 @@ python tools/check_regression.py
 同次启动异常时，应先核对 `owner.json`、`runtime/routes.json`、`ip -4/-6 rule show`、`ip -4/-6 route show table 18460` 和接口 alias。确认只属于本次插件事务后按日志中的**单条逆命令**恢复，再移除该日志。不要使用 `ip rule flush`、全表 flush 或删除 `wg0`。本版不提供未经核对的一键强制清理按钮。
 
 未实现自动卸载按钮，避免误删含密钥的备份。需要退场时先关闭自启、停止本插件隧道、导出所需配置，并按所有权记录人工移除本插件文件。
+
+## v0.1.0 导入故障恢复
+
+v0.1.0 缺少 KANO 必需的 script 封装，请改用 v0.1.1。先在插件管理删除故障项并保存；无法操作时参阅 [恢复步骤](docs/RELEASE-v0.1.1.md)，仅移除哈希匹配的旧插件。不要直接叠加导入或清空全部插件。

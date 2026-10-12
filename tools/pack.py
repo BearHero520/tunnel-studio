@@ -1,7 +1,7 @@
 """Create the reviewable source/distribution bundle; never include private inputs."""
 import pathlib,zipfile
 ROOT=pathlib.Path(__file__).resolve().parents[1]
-target=ROOT.parent/'tunnel-studio-0.1.0.zip'
+target=ROOT.parent/'tunnel-studio-0.1.1.zip'
 exclude={'node_modules','vendor-source','.git','work','test-results','__pycache__'}
 with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
     for p in sorted(ROOT.rglob('*')):
