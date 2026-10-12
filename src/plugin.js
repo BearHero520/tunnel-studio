@@ -15,7 +15,7 @@
   const style=document.createElement('style');style.textContent=KTS_STYLE;ui.append(style);
   const shell=document.createElement('div');shell.className='studio';shell.dataset.mode='auto';
   shell.innerHTML=`
-  <header class="head"><div class="brand"><h1>WireGuard / AmneziaWG</h1><span class="hint">v0.1.4</span><span class="badge" id="protocol-badge">未选择协议</span></div><select class="mode" aria-label="显示模式"><option value="auto">自动布局</option><option value="desktop">桌面</option><option value="phone">手机</option></select></header>
+  <header class="head"><div class="brand"><h1>WireGuard / AmneziaWG</h1><span class="hint">v0.1.5</span><span class="badge" id="protocol-badge">未选择协议</span></div><select class="mode" aria-label="显示模式"><option value="auto">自动布局</option><option value="desktop">桌面</option><option value="phone">手机</option></select></header>
   <div class="toolbar row"><button data-action="install">安装 / 更新</button><button class="primary" data-action="start">启动</button><button data-action="stop">停止</button><button data-action="refresh">刷新状态</button><span class="hint" id="dirty">尚未载入</span></div>
   <div class="workspace">
   <section class="editor-pane" data-panel="profile"><div class="editor-title"><strong>配置</strong><button data-action="load">读取设备配置</button></div>
@@ -68,10 +68,10 @@
     backup:async()=>{await KTSHost.call('backup');await listBackups();report('已创建配置快照。');},
     backups:listBackups,
     rollback:async()=>{if(!await confirm('回滚资源？','恢复上一份校验通过的资源，配置保持当前保存内容。'))return;await KTSHost.call('rollback');await refresh();report('资源已回滚。');},
-    diagnose:async()=>{state.diagnostics=await KTSHost.call('diagnose');$('#diagnostics').textContent=JSON.stringify(state.diagnostics,null,2);report('只读诊断完成，不包含配置密钥。');},
-    'download-diagnostics':async()=>{if(!state.diagnostics)throw new Error('请先生成诊断。');download('tunnel-studio-diagnostics.json',JSON.stringify(state.diagnostics,null,2));},
+    diagnose:async()=>{report('正在采集当前诊断，请稍候。');const started=performance.now();const result=await KTSHost.call('diagnose');state.diagnostics={...result,browserCapturedAt:new Date().toISOString(),requestDurationMs:Math.round(performance.now()-started)};$('#diagnostics').textContent=JSON.stringify(state.diagnostics,null,2);report('只读诊断完成，不包含配置密钥。');},
+    'download-diagnostics':async()=>{if(!state.diagnostics)throw new Error('请先生成诊断。');download('tunnel-studio-diagnostics-'+(state.diagnostics.browserCapturedAt||'snapshot').replace(/[:.]/g,'-')+'.json',JSON.stringify(state.diagnostics,null,2));report('已导出上次采集的诊断快照；需要新数据请点击“生成只读诊断”。');},
     export:async()=>{if(!await confirm('导出含密钥的配置？','下载的 JSON 含私钥，请保存在可信位置。'))return;download('tunnel-studio-profile.json',JSON.stringify(profile(),null,2));report('已导出当前编辑内容。');},
-    clear:async()=>{if(!await confirm('清空本页编辑？','只清空浏览器内存中的编辑内容。'))return;$('#config').value='';$('#sources').value='';state.saved=null;controls();report('编辑器已清空。');}
+    clear:async()=>{if(!await confirm('清空本页编辑？','只清空浏览器内存中的编辑内容，设备上已保存的配置仍保留。'))return;$('#config').value='';$('#sources').value='';state.touched=true;controls();report('编辑器已清空，设备配置未删除。');}
   };
   $$('[data-action]').forEach(b=>b.addEventListener('click',()=>transaction(actions[b.dataset.action])));
   $$('[data-tab]').forEach(b=>b.addEventListener('click',()=>{$$('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('[data-panel]').forEach(x=>x.hidden=x.dataset.panel!=='profile'&&x.dataset.panel!==b.dataset.tab);}));
@@ -80,5 +80,16 @@
   for(const x of [$('#config'),$('#sources'),$('#network-mode'),$('#lan-interface'),$('#ipv6-mode'),...$$('input[name=protocol]')])x.addEventListener('input',()=>{state.touched=true;controls()});
   $('#import').onchange=()=>transaction(async()=>{const file=$('#import').files[0];if(!file)return;try{if(file.size>100000)throw new Error('配置文件超过 100 KB。');if(state.touched&&dirty()&&!await confirm('替换当前编辑？','尚未保存的编辑将丢失。'))return;const text=await file.text();if(file.name.endsWith('.json')){const p=JSON.parse(text);if(!['wireguard','amneziawg'].includes(p.protocol)||typeof p.text!=='string'||(p.networkMode!==undefined&&!['tunnel','sources','device','lan','gateway'].includes(p.networkMode))||(p.ipv6Mode!==undefined&&!['block','nat','routed'].includes(p.ipv6Mode))||(p.sources&&(!Array.isArray(p.sources)||p.sources.some(s=>typeof s!=='string'))))throw new Error('不是本插件的备份格式。');fill(p);state.saved=null;}else{$('#config').value=text;state.saved=null;}state.touched=true;report('已导入到编辑器，请检查协议并校验。');}finally{$('#import').value='';}});
   controls();
+  const warnUnsaved=e=>{if(!host.isConnected){window.removeEventListener('beforeunload',warnUnsaved);return;}if(state.touched&&dirty()){e.preventDefault();e.returnValue='';}};
+  window.addEventListener('beforeunload',warnUnsaved);
+  await transaction(async()=>{
+    report('正在读取设备状态与已保存配置。');
+    await refresh();
+    if(state.status?.configured){
+      const p=await KTSHost.call('load');
+      if(!state.touched){fill(p);report('已自动载入设备配置。未保存的编辑请先保存再刷新页面。');}
+      else report('设备配置已存在；保留当前编辑，可点击“读取设备配置”载入。');
+    }else report('设备尚无已保存配置，请导入后保存。');
+  });
   const timer=setInterval(()=>{if(!host.isConnected){clearInterval(timer);return;}if(!document.hidden&&state.status?.installed&&!state.busy)transaction(async()=>{try{await refresh()}catch{report('状态刷新失败，设备状态暂时未知。',true);$('#connection').textContent='状态未知';state.status=null;controls();}})},10000);
 })();

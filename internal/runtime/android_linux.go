@@ -71,7 +71,15 @@ func read(path string) string {
 	return strings.TrimSpace(string(b))
 }
 func Diagnose(v vault.Vault) map[string]any {
+	started := time.Now()
 	m := map[string]any{"uid": os.Geteuid(), "interface": Interface, "selinux": read("/sys/fs/selinux/enforce"), "ipv4Forward": read("/proc/sys/net/ipv4/ip_forward"), "ipv6Forward": read("/proc/sys/net/ipv6/conf/all/forwarding"), "version": Version}
+	m["capturedAt"] = started.UTC().Format(time.RFC3339Nano)
+	m["uptime"] = read("/proc/uptime")
+	stats := map[string]string{}
+	for _, name := range []string{"rx_bytes", "tx_bytes", "rx_packets", "tx_packets", "rx_errors", "tx_errors", "rx_dropped", "tx_dropped"} {
+		stats[name] = read("/sys/class/net/" + Interface + "/statistics/" + name)
+	}
+	m["interfaceCounters"] = stats
 	for _, p := range []string{"/dev/net/tun", "/dev/tun"} {
 		f, e := os.Stat(p)
 		if e != nil {
@@ -89,19 +97,28 @@ func Diagnose(v vault.Vault) map[string]any {
 	}
 	if _, e := v.Check(); e == nil {
 		m["owned"] = true
-		m["status"], _ = Call(v, "status")
+		status, statusErr := Call(v, "status")
+		m["status"] = status
+		if statusErr != nil {
+			m["statusError"] = statusErr.Error()
+		}
 		fw := map[string]string{}
+		fwErrors := map[string]string{}
 		for _, tool := range []string{"iptables", "ip6tables"} {
 			for _, entry := range [][2]string{{"mangle", "KTS_ROUTE"}, {"mangle", "KTS_MSS"}, {"nat", "KTS_SNAT"}, {"nat", "KTS_DNS"}, {"filter", "KTS_FWD"}, {"filter", "KTS_BLOCK"}} {
-				s, e := command(tool, "-w", "3", "-t", entry[0], "-S", entry[1])
+				s, e := command(tool, "-w", "3", "-t", entry[0], "-L", entry[1], "-n", "-v", "-x")
 				if e == nil {
 					fw[tool+" "+entry[0]+" "+entry[1]] = s
+				} else {
+					fwErrors[tool+" "+entry[0]+" "+entry[1]] = e.Error()
 				}
 			}
 		}
 		m["ownedFirewall"] = fw
+		m["firewallReadErrors"] = fwErrors
 	}
 	m["ipv4ReversePathFilter"] = read("/proc/sys/net/ipv4/conf/all/rp_filter")
+	m["durationMs"] = time.Since(started).Milliseconds()
 	return m
 }
 func Start(v vault.Vault) error {

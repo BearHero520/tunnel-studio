@@ -1,18 +1,18 @@
 # Tunnel Studio
 
-KANO 的 WireGuard / AmneziaWG 双协议插件，**v0.1.4 联调预览版**。独立实现的管理页、Go 后端、网络事务与测试；旧 WireGuard 项目仅作为宿主行为参考，不修改旧仓库。
+KANO 的 WireGuard / AmneziaWG 双协议插件，**v0.1.5 联调预览版**。独立实现的管理页、Go 后端、网络事务与测试；旧 WireGuard 项目仅作为宿主行为参考，不修改旧仓库。
 
-- [下载单文件插件](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.4/tunnel-studio.js)
-- [完整源码包](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.4/tunnel-studio-0.1.4.zip)
-- [Raw JS](https://raw.githubusercontent.com/BearHero520/tunnel-studio/v0.1.4/dist/tunnel-studio.js)
-- [发行说明与校验文件](https://github.com/BearHero520/tunnel-studio/releases/tag/v0.1.4)
+- [下载单文件插件](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.5/tunnel-studio.js)
+- [完整源码包](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.5/tunnel-studio-0.1.5.zip)
+- [Raw JS](https://raw.githubusercontent.com/BearHero520/tunnel-studio/v0.1.5/dist/tunnel-studio.js)
+- [发行说明与校验文件](https://github.com/BearHero520/tunnel-studio/releases/tag/v0.1.5)
 
-## 从 v0.1.3 更新
+## 从 v0.1.3 / v0.1.4 更新
 
 1. 在旧插件刷新状态，停止 Tunnel Studio 隧道。
 2. 在 KANO 插件管理删除旧 Tunnel Studio 网页插件项，导入新版，保存并刷新。
-3. 确认标题 v0.1.4，点击“安装 / 更新”。设备配置会保留。
-4. 点击“读取设备配置”，选择代理范围“本机 + 热点”。U30 Air 热点接口为 br0；其他设备需核对。
+3. 确认标题 v0.1.5，点击“安装 / 更新”。设备配置会保留。
+4. 页面会自动载入设备已保存配置，核对代理范围；按需选择“本机 + 热点”。U30 Air 热点接口为 br0；其他设备需核对。
 5. 检查配置的 AllowedIPs 和 DNS。默认阻止所选范围的外网 IPv6，避免在 IPv4 代理期间绕过隧道；需要 IPv6 时选择合适模式。
 6. 保存并确认流量接管设置，再启动。核对右侧**运行范围**、握手与实际网页访问；左侧未保存的选择不是运行状态。
 
@@ -50,7 +50,7 @@ IPv6 的“阻止外网”保留局域网、链路本地和隧道传输；“NAT
 
 Go 配置/网络计划/事务测试、浏览器导入/安装模拟/双栏及明暗布局测试通过。Android x86_64 模拟器执行过真实 ip/iptables/ip6tables 规则与清理测试，入口使用未挂接测试链，不影响真实流量；不是完整公网测试。
 
-用户提供的 v0.1.3 U30 Air 诊断证实安装、kts0、执行身份及一次握手，但当时来源为空，未接管流量。**v0.1.4 在 U30 Air 上的公网代理、吞吐、自启及长时间稳定性尚待实测。** 不把握手、计数或模拟测试等同于代理可用。
+用户提供的 v0.1.3 U30 Air 诊断证实安装、kts0、执行身份及一次握手，但当时来源为空，未接管流量。**用户在 v0.1.4 上反馈部分网站无法访问，以及运行一段时间后断网。v0.1.5 只改进配置加载和诊断，尚未修复或定位这些联网故障；吞吐、自启及长时间稳定性仍未验证。** 不把握手、计数或模拟测试等同于代理可用。
 
 ## 构建与测试
 
