@@ -8,7 +8,7 @@ window.runShellWithRoot=async command=>{
  const token=/KTS_\d+_\d+/.exec(command)?.[0];if(!token)throw Error('missing sentinel');
  const exit=(data,code=0)=>({success:true,content:(typeof data==='string'?data:JSON.stringify(data))+'\n'+token+':'+code+'\n'});
  if(s.fail)return {success:false,content:'transport failed'};
- if(command.includes('uname -m'))return exit(command.includes('id -u')?'0\naarch64':'uid=0(root) gid=0(root)\naarch64\n/dev/tun');
+ if(command.includes('uname -m'))return exit(command.includes('id -u')?'0\narmv8l\narm64-v8a':'uid=0(root) gid=0(root)\narmv8l\nAndroid 64-bit ABI: arm64-v8a\n/dev/tun');
  if(command.includes('release.json')&&command.includes('cat '))return s.installed?exit({current:'a'.repeat(64),previous:'b'.repeat(64)}):exit('not installed',1);
  const reply=data=>exit({ok:true,data});
  if(command.includes(' install')){s.installed=true;return reply({release:'a'.repeat(64)})}

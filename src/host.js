@@ -53,9 +53,19 @@ const KTSHost = (() => {
     const raw = await shell(`${verified(path,hash)} && ${quote(path)} ${quote(action)}${arg ? ' ' + quote(arg) : ''}`, 45000);
     const reply = JSON.parse(raw); if (!reply.ok) throw new Error(reply.error || '设备操作失败'); return reply.data;
   }
+  function checkInstallIdentity(identity) {
+    const lines=identity.trim().split(/\r?\n/).map(line=>line.trim());
+    const [uid,machine,abi64='']=lines;
+    if(lines.length>3||!/^\d+$/.test(uid)||!machine) throw new Error('无法解析设备身份，请运行“检查 KANO 执行通道”并反馈结果。');
+    if(uid!=='0') throw new Error(`KANO 当前执行身份为 uid=${uid}，安装需要为 KANO 授予 root 权限。`);
+    // A 32-bit Android execution context can report armv8l on an ARM64 device.
+    // Prefer the advertised 64-bit Android ABI instead of rejecting that uname.
+    if(!abi64.split(',').map(s=>s.trim()).includes('arm64-v8a')&&!/^(aarch64|arm64)$/.test(machine))
+      throw new Error(`KANO 已有 root，但未确认 ARM64 执行支持（uname=${sanitize(machine).slice(0,40)}，64 位 ABI=${sanitize(abi64).slice(0,100)||'空'}）。请反馈执行通道诊断结果。`);
+    return {uid:Number(uid),machine,abi64};
+  }
   async function install(resource) {
-    const identity = await shell('id -u; uname -m');
-    if (!/^0\s*\n(?:aarch64|arm64)\s*$/.test(identity)) throw new Error('安装需要 KANO 的 root 通道和 ARM64 设备。');
+    checkInstallIdentity(await shell('id -u; uname -m; getprop ro.product.cpu.abilist64'));
     const bytes = Uint8Array.from(atob(resource.base64), c => c.charCodeAt(0));
     if (typeof DecompressionStream !== 'function') throw new Error('当前浏览器缺少离线解压能力，请使用新版 Chrome / Edge。');
     const blob = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).blob();
@@ -71,6 +81,6 @@ const KTSHost = (() => {
     try { return await call(validateOnly ? 'validate-file' : 'save-file',path); }
     finally { await shell(`test ! -L ${quote(path)} && rm -f ${quote(path)}`).catch(() => {}); }
   }
-  return {call,install,save,shell,quote,unpack,uploadedPath,sanitize};
+  return {call,install,save,shell,quote,unpack,uploadedPath,sanitize,checkInstallIdentity};
 })();
 if (typeof module !== 'undefined') module.exports = KTSHost;

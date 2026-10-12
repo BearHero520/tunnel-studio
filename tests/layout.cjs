@@ -44,6 +44,17 @@ const root=path.resolve(__dirname,'..');
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'layout overflows');
    assert.deepEqual(errors,[]);
    await page.screenshot({path:path.join(root,'docs',width===390?'host-phone.png':'host-desktop.png'),fullPage:true});
+   await page.evaluate(()=>{
+    document.body.style.background='#1f2937';document.body.style.color='#eee';
+    document.documentElement.style.setProperty('--dark-bg-color','#1f2937');
+    document.documentElement.style.setProperty('--dark-text-color','#eee');
+   });
+   assert.equal(await page.locator('h1').evaluate(el=>getComputedStyle(el).color),'rgb(238, 238, 238)');
+   await page.getByRole('button',{name:'版本与恢复',exact:true}).click();
+   await page.locator('[data-action="install"]').click();
+   await page.locator('#cancel').click();
+   await page.getByRole('button',{name:'连接概览',exact:true}).click();
+   await page.screenshot({path:path.join(root,'docs',width===390?'host-phone-dark.png':'host-desktop-dark.png'),fullPage:true});
    await page.close();
   }
   console.log('PASS: KANO collapsed/open menu; visible interactive console; desktop/mobile; host controls');

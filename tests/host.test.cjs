@@ -1,5 +1,15 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const host=require('../src/host.js');
+test('installation recognizes ARM64 Android ABI under armv8l execution context',()=>{
+ assert.equal(host.checkInstallIdentity('0\narmv8l\narm64-v8a').machine,'armv8l');
+ assert.equal(host.checkInstallIdentity('0\r\narmv8l\r\narm64-v8a\r\n').uid,0);
+ assert.equal(host.checkInstallIdentity('0\naarch64\n').uid,0);
+ assert.throws(()=>host.checkInstallIdentity('2000\narmv8l\narm64-v8a'),/uid=2000/);
+ assert.throws(()=>host.checkInstallIdentity('0\narmv8l\n'),/已有 root.*未确认 ARM64/);
+ assert.throws(()=>host.checkInstallIdentity('0\nx86_64\nx86_64'),/未确认 ARM64/);
+ assert.throws(()=>host.checkInstallIdentity('0\narmv8l\nnot-arm64-v8a'),/未确认 ARM64/);
+ assert.throws(()=>host.checkInstallIdentity('unexpected\n0\narmv8l\narm64-v8a'),/无法解析/);
+});
 test('KANO exit framing refuses truncated and failed command replies',()=>{
  assert.equal(host.unpack('{"ok":true}\nKTS_1:0\n','KTS_1'),'{"ok":true}');
  assert.throws(()=>host.unpack('looks successful','KTS_1'),/没有完整结束/);
