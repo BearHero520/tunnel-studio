@@ -15,18 +15,25 @@ import (
 )
 
 type Profile struct {
-	Protocol string   `json:"protocol"`
-	Text     string   `json:"text"`
-	Sources  []string `json:"sources"` // Empty: tunnel only. Explicit CIDRs: source policy routing.
+	Protocol     string   `json:"protocol"`
+	Text         string   `json:"text"`
+	Sources      []string `json:"sources"` // Empty: tunnel only. Explicit CIDRs: source policy routing.
+	NetworkMode  string   `json:"networkMode,omitempty"`
+	LANInterface string   `json:"lanInterface,omitempty"`
+	IPv6Mode     string   `json:"ipv6Mode,omitempty"`
 }
 type Parsed struct {
-	Interface map[string]string
-	Peers     []map[string]string
-	Addresses []netip.Prefix
-	Routes    []netip.Prefix
-	Sources   []netip.Prefix
-	MTU       int
-	Warnings  []string
+	Interface    map[string]string
+	Peers        []map[string]string
+	Addresses    []netip.Prefix
+	Routes       []netip.Prefix
+	Sources      []netip.Prefix
+	MTU          int
+	Warnings     []string
+	NetworkMode  string
+	LANInterface string
+	IPv6Mode     string
+	DNS          []netip.Addr
 }
 
 var names = map[string]string{
@@ -347,7 +354,10 @@ func Parse(p Profile) (*Parsed, error) {
 		seenSources[r.String()] = true
 		c.Sources = append(c.Sources, r)
 	}
-	if len(c.Sources) == 0 {
+	if e := parseNetwork(p, c); e != nil {
+		return nil, e
+	}
+	if len(c.Sources) == 0 && c.NetworkMode == "tunnel" {
 		c.Warnings = append(c.Warnings, "仅创建独立隧道；未启用来源策略路由，不接管设备默认网络。")
 	}
 	return c, nil

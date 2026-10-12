@@ -31,3 +31,9 @@ S1–S4、H1–H4、HeaderProtectionKey 等服务端相关参数需按服务端�
 不接受 `AdvancedSecurity`：官方 tools 字段集与固定 Go peer UAPI 不是同一集合。也不接受脚本钩子、任意 shell、系统 DNS 命令、任意表号或 FwMark。
 
 示例配置不是工作凭据，所有密钥为占位文本。测试密钥通过 Go `crypto/ecdh` + `crypto/rand` 每次生成，不读取用户配置。
+
+## v0.1.4 自动代理字段
+
+配置 JSON 新增 `networkMode`（gateway/device/lan/tunnel/sources）、`lanInterface`（默认 br0）、`ipv6Mode`（block/nat/routed）。缺失 networkMode 的历史配置保持旧行为：空 sources 为仅隧道，非空为来源策略路由。自动模式不得同时填写 sources。
+
+自动模式需要 IPv4 Address 与 AllowedIPs；DNS 按同族 AllowedIPs 校验。block 模式忽略 IPv6 DNS 并阻止所选范围的外网 IPv6。nat 模式需要 IPv6 Address、AllowedIPs 和内核 NAT66；routed 仅用于 lan 模式，使用 IPv4 DNS 并要求服务端配置 LAN IPv6 回程路由。隧道 UDP socket 使用保留标记，避免被本机代理再次接管。

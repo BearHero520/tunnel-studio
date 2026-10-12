@@ -71,7 +71,7 @@ func read(path string) string {
 	return strings.TrimSpace(string(b))
 }
 func Diagnose(v vault.Vault) map[string]any {
-	m := map[string]any{"uid": os.Geteuid(), "interface": Interface, "selinux": read("/sys/fs/selinux/enforce"), "ipv4Forward": read("/proc/sys/net/ipv4/ip_forward"), "ipv6Forward": read("/proc/sys/net/ipv6/conf/all/forwarding"), "nat66Required": false, "version": Version}
+	m := map[string]any{"uid": os.Geteuid(), "interface": Interface, "selinux": read("/sys/fs/selinux/enforce"), "ipv4Forward": read("/proc/sys/net/ipv4/ip_forward"), "ipv6Forward": read("/proc/sys/net/ipv6/conf/all/forwarding"), "version": Version}
 	for _, p := range []string{"/dev/net/tun", "/dev/tun"} {
 		f, e := os.Stat(p)
 		if e != nil {
@@ -80,7 +80,7 @@ func Diagnose(v vault.Vault) map[string]any {
 			m[p] = f.Mode().String()
 		}
 	}
-	for _, a := range [][]string{{"-4", "rule", "show"}, {"-6", "rule", "show"}, {"-brief", "link", "show"}} {
+	for _, a := range [][]string{{"-4", "rule", "show"}, {"-6", "rule", "show"}, {"-brief", "link", "show"}, {"-4", "route", "show", "table", "18460"}, {"-6", "route", "show", "table", "18460"}, {"-4", "route", "get", "1.1.1.1", "mark", "0x40000000"}} {
 		s, e := ip(a...)
 		if e != nil {
 			s = e.Error()
@@ -90,7 +90,18 @@ func Diagnose(v vault.Vault) map[string]any {
 	if _, e := v.Check(); e == nil {
 		m["owned"] = true
 		m["status"], _ = Call(v, "status")
+		fw := map[string]string{}
+		for _, tool := range []string{"iptables", "ip6tables"} {
+			for _, entry := range [][2]string{{"mangle", "KTS_ROUTE"}, {"mangle", "KTS_MSS"}, {"nat", "KTS_SNAT"}, {"nat", "KTS_DNS"}, {"filter", "KTS_FWD"}, {"filter", "KTS_BLOCK"}} {
+				s, e := command(tool, "-w", "3", "-t", entry[0], "-S", entry[1])
+				if e == nil {
+					fw[tool+" "+entry[0]+" "+entry[1]] = s
+				}
+			}
+		}
+		m["ownedFirewall"] = fw
 	}
+	m["ipv4ReversePathFilter"] = read("/proc/sys/net/ipv4/conf/all/rp_filter")
 	return m
 }
 func Start(v vault.Vault) error {
@@ -129,7 +140,7 @@ func Start(v vault.Vault) error {
 	}
 	exited := make(chan error, 1)
 	go func() { exited <- cmd.Wait() }()
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 250; i++ {
 		if _, e = Call(v, "status"); e == nil {
 			return nil
 		}
@@ -164,7 +175,9 @@ func resolve(s string) (string, error) {
 }
 
 type undo struct {
-	Args []string `json:"args"`
+	Args     []string `json:"args"`
+	Tool     string   `json:"tool,omitempty"`
+	Expected string   `json:"expected,omitempty"`
 }
 type journal struct {
 	BootID     string `json:"bootID"`
@@ -179,8 +192,8 @@ func routesAvailable() error {
 			return e
 		}
 		for _, line := range strings.Split(s, "\n") {
-			if strings.HasPrefix(strings.TrimSpace(line), "18460:") || strings.Contains(line, "lookup 18460") {
-				return errors.New("路由优先级或表 18460 已被占用")
+			if strings.HasPrefix(strings.TrimSpace(line), ProxyPriority+":") || strings.HasPrefix(strings.TrimSpace(line), "18460:") || strings.Contains(line, "lookup 18460") {
+				return errors.New("路由优先级 9000/18460 或表 18460 已被占用")
 			}
 		}
 		s, e = ip(f, "route", "show", "table", "18460")
@@ -231,11 +244,19 @@ func Serve(v vault.Vault) error {
 	if e != nil {
 		return e
 	}
-	if len(c.Sources) > 0 {
+	if len(c.Sources) > 0 || autoProxy(c) {
 		if e = routesAvailable(); e != nil {
 			return e
 		}
 	}
+	local, prep, e := prepareProxy(c)
+	if e != nil {
+		return e
+	}
+	if autoProxy(c) {
+		uapi = "fwmark=536870912\n" + uapi
+	}
+	plan := append(prep, ProxyPlan(c, uapi, local)...)
 	t, e := tun.CreateTUN(Interface, c.MTU)
 	if e != nil {
 		return errors.New("无法创建独立 TUN；检查 root、TUN 权限和 SELinux")
@@ -265,7 +286,7 @@ func Serve(v vault.Vault) error {
 	defer func() {
 		clean := !ambiguous
 		for i := len(applied) - 1; i >= 0; i-- {
-			if _, e := ip(applied[i].Args...); e != nil {
+			if e := undoOperation(applied[i]); e != nil {
 				clean = false
 			}
 		}
@@ -273,20 +294,22 @@ func Serve(v vault.Vault) error {
 			os.Remove(v.Path("runtime/routes.json"))
 		}
 	}()
-	for _, args := range RoutePlan(c, uapi) {
-		inverse := append([]string(nil), args...)
-		inverse[2] = "del"
-		next := append(applied, undo{inverse})
-		raw, _ := json.Marshal(journal{BootID: bootID, OwnerID: id.ID, Operations: next})
-		if e = vault.Atomic(v.Path("runtime/routes.json"), raw, 0600); e != nil {
-			return e
+	done, failed, applyErr := ApplyPolicy(plan, func(next []Operation) error {
+		inverses := make([]undo, 0, len(next))
+		for _, op := range next {
+			inverses = append(inverses, undo{Args: op.Undo, Tool: op.Tool, Expected: op.Expected})
 		}
-		if _, e = ip(args...); e != nil { // Keep journal on ambiguous failure for explicit recovery.
-			ambiguous = true
-			return e
-		}
-		applied = next
+		raw, _ := json.Marshal(journal{BootID: bootID, OwnerID: id.ID, Operations: inverses})
+		return vault.Atomic(v.Path("runtime/routes.json"), raw, 0600)
+	}, func(op Operation) error { return runOperation(op.Tool, op.Args) })
+	for _, op := range done {
+		applied = append(applied, undo{Args: op.Undo, Tool: op.Tool, Expected: op.Expected})
 	}
+	if applyErr != nil {
+		ambiguous = errors.Is(applyErr, errNetworkUncertain) || (failed != nil && failed.Tool == "sysctl")
+		return applyErr
+	}
+
 	sock := v.Path("runtime/control.sock")
 	if e = vault.NoLink(sock); e == nil {
 		if f, _ := os.Lstat(sock); f.Mode()&os.ModeSocket == 0 {
@@ -337,7 +360,7 @@ func Serve(v vault.Vault) error {
 		}
 		if req.Action == "status" {
 			raw, e := d.IpcGet()
-			status := map[string]any{"running": e == nil, "protocol": p.Protocol, "interface": Interface, "version": Version, "sources": p.Sources}
+			status := map[string]any{"running": e == nil, "protocol": p.Protocol, "interface": Interface, "version": Version, "sources": p.Sources, "networkMode": c.NetworkMode, "ipv6Mode": c.IPv6Mode, "lanInterface": c.LANInterface, "dnsRedirect": len(c.DNS) > 0, "nat66Required": c.IPv6Mode == "nat"}
 			peers := []map[string]string{}
 			var peer map[string]string
 			for _, line := range strings.Split(raw, "\n") {

@@ -38,7 +38,7 @@ func run(args []string) (any, error) {
 		arg = args[1]
 	}
 	if action == "version" {
-		return map[string]any{"version": rt.Version, "schema": 1, "protocols": []string{"wireguard", "amneziawg"}, "backend": "amneziawg-go v3.1.20260828"}, nil
+		return map[string]any{"version": rt.Version, "schema": 1, "autoProxy": true, "protocols": []string{"wireguard", "amneziawg"}, "backend": "amneziawg-go v3.1.20260828"}, nil
 	}
 	if action == "validate" {
 		b, e := io.ReadAll(io.LimitReader(os.Stdin, 100001))
@@ -72,6 +72,8 @@ func run(args []string) (any, error) {
 	}
 	if action == "status" {
 		m := v.Summary()
+		m["version"] = rt.Version
+		m["autoProxy"] = true
 		s, e := rt.Call(v, "status")
 		m["running"] = e == nil
 		if e == nil {
@@ -198,6 +200,20 @@ func run(args []string) (any, error) {
 			return nil, e
 		}
 		if p, e := v.Read(); e == nil {
+			if p.NetworkMode == "gateway" || p.NetworkMode == "device" || p.NetworkMode == "lan" {
+				ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+				output, err := exec.CommandContext(ctx, previous, "version").Output()
+				cancel()
+				var info struct {
+					OK   bool `json:"ok"`
+					Data struct {
+						AutoProxy bool `json:"autoProxy"`
+					} `json:"data"`
+				}
+				if err != nil || json.Unmarshal(output, &info) != nil || !info.OK || !info.Data.AutoProxy {
+					return nil, errors.New("上一版本不支持当前自动代理配置；先停止并改为仅隧道模式，或保留当前资源版本")
+				}
+			}
 			raw, _ := json.Marshal(p)
 			ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 			cmd := exec.CommandContext(ctx, previous, "validate")
