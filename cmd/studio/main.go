@@ -38,7 +38,7 @@ func run(args []string) (any, error) {
 		arg = args[1]
 	}
 	if action == "version" {
-		return map[string]any{"version": rt.Version, "schema": 1, "autoProxy": true, "protocols": []string{"wireguard", "amneziawg"}, "backend": "amneziawg-go v3.1.20260828"}, nil
+		return map[string]any{"version": rt.Version, "schema": 1, "autoProxy": true, "networkCheck": true, "protocols": []string{"wireguard", "amneziawg"}, "backend": "amneziawg-go v3.1.20260828"}, nil
 	}
 	if action == "validate" {
 		b, e := io.ReadAll(io.LimitReader(os.Stdin, 100001))
@@ -59,6 +59,9 @@ func run(args []string) (any, error) {
 	if action == "diagnose" {
 		return rt.Diagnose(v), nil
 	}
+	if action == "network-check" {
+		return rt.NetworkCheck(v, arg)
+	}
 	if action == "install" {
 		if e := v.Init(); e != nil {
 			return nil, e
@@ -74,6 +77,7 @@ func run(args []string) (any, error) {
 		m := v.Summary()
 		m["version"] = rt.Version
 		m["autoProxy"] = true
+		m["networkCheck"] = true
 		s, e := rt.Call(v, "status")
 		m["running"] = e == nil
 		if e == nil {

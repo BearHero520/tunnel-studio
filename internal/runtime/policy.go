@@ -147,6 +147,11 @@ func ProxyPlan(c *config.Parsed, uapi string, local []netip.Prefix) []Operation 
 		}
 		out = append(out, fw(tool, "mangle", "-N", "KTS_MSS"), fw(tool, "mangle", "-A", "KTS_MSS", "-p", "tcp", "--tcp-flags", "SYN,RST", "SYN", "-j", "TCPMSS", "--set-mss", strconv.Itoa(mss)))
 		hooks = append(hooks, fw(tool, "mangle", "-I", "POSTROUTING", "-o", Interface, "-m", "mark", "--mark", ProxyMark, "-j", "KTS_MSS"))
+		if lanProxy(c) {
+			// Clamp the remote SYN/SYN-ACK too: it controls LAN uploads.
+			// Return packets do not carry the outbound proxy mark.
+			hooks = append(hooks, fw(tool, "mangle", "-I", "FORWARD", "-i", Interface, "-o", c.LANInterface, "-j", "KTS_MSS"))
+		}
 		if nat {
 			out = append(out, fw(tool, "nat", "-N", "KTS_SNAT"), fw(tool, "nat", "-A", "KTS_SNAT", "-j", "MASQUERADE"))
 			hooks = append(hooks, fw(tool, "nat", "-I", "POSTROUTING", "-o", Interface, "-m", "mark", "--mark", ProxyMark, "-j", "KTS_SNAT"))

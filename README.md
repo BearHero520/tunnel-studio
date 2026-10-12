@@ -1,17 +1,17 @@
 # Tunnel Studio
 
-KANO 的 WireGuard / AmneziaWG 双协议插件，**v0.1.5 联调预览版**。独立实现的管理页、Go 后端、网络事务与测试；旧 WireGuard 项目仅作为宿主行为参考，不修改旧仓库。
+KANO 的 WireGuard / AmneziaWG 双协议插件，**v0.1.6 联调预览版**。独立实现的管理页、Go 后端、网络事务与测试；旧 WireGuard 项目仅作为宿主行为参考，不修改旧仓库。
 
-- [下载单文件插件](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.5/tunnel-studio.js)
-- [完整源码包](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.5/tunnel-studio-0.1.5.zip)
-- [Raw JS](https://raw.githubusercontent.com/BearHero520/tunnel-studio/v0.1.5/dist/tunnel-studio.js)
-- [发行说明与校验文件](https://github.com/BearHero520/tunnel-studio/releases/tag/v0.1.5)
+- [下载单文件插件](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.6/tunnel-studio.js)
+- [完整源码包](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.6/tunnel-studio-0.1.6.zip)
+- [Raw JS](https://raw.githubusercontent.com/BearHero520/tunnel-studio/v0.1.6/dist/tunnel-studio.js)
+- [发行说明与校验文件](https://github.com/BearHero520/tunnel-studio/releases/tag/v0.1.6)
 
-## 从 v0.1.3 / v0.1.4 更新
+## 从 v0.1.3 / v0.1.4 / v0.1.5 更新
 
 1. 在旧插件刷新状态，停止 Tunnel Studio 隧道。
 2. 在 KANO 插件管理删除旧 Tunnel Studio 网页插件项，导入新版，保存并刷新。
-3. 确认标题 v0.1.5，点击“安装 / 更新”。设备配置会保留。
+3. 确认标题 v0.1.6，点击“安装 / 更新”。设备配置会保留。
 4. 页面会自动载入设备已保存配置，核对代理范围；按需选择“本机 + 热点”。U30 Air 热点接口为 br0；其他设备需核对。
 5. 检查配置的 AllowedIPs 和 DNS。默认阻止所选范围的外网 IPv6，避免在 IPv4 代理期间绕过隧道；需要 IPv6 时选择合适模式。
 6. 保存并确认流量接管设置，再启动。核对右侧**运行范围**、握手与实际网页访问；左侧未保存的选择不是运行状态。
@@ -28,7 +28,9 @@ KANO 的 WireGuard / AmneziaWG 双协议插件，**v0.1.5 联调预览版**。�
 | 仅隧道 | 只建立 kts0，不代理上网 |
 | 自定义来源路由 | 兼容早期显式 CIDR 模式，不自动添加 NAT/DNS/放行规则 |
 
-自动代理只匹配 AllowedIPs；非默认 AllowedIPs 表示分流，不是全局代理。自动模式设置 IPv4 MASQUERADE、所需转发与已配置 DNS 的 TCP/UDP 53 重定向。DNS 地址须被同族 AllowedIPs 覆盖；未设置可用 DNS 时不重定向，不偷偷使用公共 DNS。按隧道 MTU 限制新建 TCP 连接的 MSS，减少路由重定向后的大包问题。已建立连接可能需要应用重连。
+自动代理只匹配 AllowedIPs；非默认 AllowedIPs 表示分流，不是全局代理。自动模式设置 IPv4 MASQUERADE、所需转发与已配置 DNS 的 TCP/UDP 53 重定向。DNS 地址须被同族 AllowedIPs 覆盖；未设置可用 DNS 时不重定向，不偷偷使用公共 DNS。按隧道 MTU 限制新建 TCP 连接的 MSS；v0.1.6 补上从隧道返回热点的 SYN/SYN-ACK，保护热点上传方向。已建立连接可能需要应用重连。
+
+“只读诊断”中的“检测联网”提供 DNS、TCP、TLS、HTTP 分阶段结果及重复采样。可填写内网 HTTP 服务的 IPv4:端口，对照小请求和 8 KB 检测头。检测从设备本机通过隧道发起，不带登录信息、不保存响应正文，不是热点电脑的已登录 Codex 对话或长时间流式连接测试。
 
 IPv6 的“阻止外网”保留局域网、链路本地和隧道传输；“NAT66”需要内核 IPv6 NAT；“热点路由”只用于热点模式，要求服务器 Peer AllowedIPs、回程路由及出口支持 LAN IPv6 前缀，不支持自动接管本机 IPv6。没有 IPv6 Address/AllowedIPs 时不能启用 IPv6 代理。
 
@@ -50,7 +52,7 @@ IPv6 的“阻止外网”保留局域网、链路本地和隧道传输；“NAT
 
 Go 配置/网络计划/事务测试、浏览器导入/安装模拟/双栏及明暗布局测试通过。Android x86_64 模拟器执行过真实 ip/iptables/ip6tables 规则与清理测试，入口使用未挂接测试链，不影响真实流量；不是完整公网测试。
 
-用户提供的 v0.1.3 U30 Air 诊断证实安装、kts0、执行身份及一次握手，但当时来源为空，未接管流量。**用户在 v0.1.4 上反馈部分网站无法访问，以及运行一段时间后断网。v0.1.5 只改进配置加载和诊断，尚未修复或定位这些联网故障；吞吐、自启及长时间稳定性仍未验证。** 不把握手、计数或模拟测试等同于代理可用。
+用户在 v0.1.4 / v0.1.5 上反馈部分网站、Codex 对话和持续通信异常。后续 v0.1.5 诊断证实热点双向流量通过，但不能确定连接失败阶段。**v0.1.6 修复 TCP MSS 返回方向的遗漏并增加实际联网检测，尚未证实已解决用户的 Codex 断线；吞吐、自启及长时间稳定性仍未验证。** 不把握手、计数或模拟测试等同于代理可用。
 
 ## 构建与测试
 

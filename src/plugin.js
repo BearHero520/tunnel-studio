@@ -15,7 +15,7 @@
   const style=document.createElement('style');style.textContent=KTS_STYLE;ui.append(style);
   const shell=document.createElement('div');shell.className='studio';shell.dataset.mode='auto';
   shell.innerHTML=`
-  <header class="head"><div class="brand"><h1>WireGuard / AmneziaWG</h1><span class="hint">v0.1.5</span><span class="badge" id="protocol-badge">未选择协议</span></div><select class="mode" aria-label="显示模式"><option value="auto">自动布局</option><option value="desktop">桌面</option><option value="phone">手机</option></select></header>
+  <header class="head"><div class="brand"><h1>WireGuard / AmneziaWG</h1><span class="hint">v0.1.6</span><span class="badge" id="protocol-badge">未选择协议</span></div><select class="mode" aria-label="显示模式"><option value="auto">自动布局</option><option value="desktop">桌面</option><option value="phone">手机</option></select></header>
   <div class="toolbar row"><button data-action="install">安装 / 更新</button><button class="primary" data-action="start">启动</button><button data-action="stop">停止</button><button data-action="refresh">刷新状态</button><span class="hint" id="dirty">尚未载入</span></div>
   <div class="workspace">
   <section class="editor-pane" data-panel="profile"><div class="editor-title"><strong>配置</strong><button data-action="load">读取设备配置</button></div>
@@ -32,7 +32,7 @@
     <p class="hint">握手成功不等于代理上网成功；请确认运行中的代理范围与流量计数。</p>
   </section>
   <section data-panel="recovery" hidden><h3>设备资源</h3><div class="version" id="release">未读取</div><div class="row"><button data-action="rollback">回滚上一资源版本</button></div><h3>配置备份</h3><div class="row"><button data-action="backup">创建快照</button><button data-action="backups">读取快照列表</button></div><div id="backups"><p class="hint">尚未读取快照。</p></div></section>
-  <section data-panel="diagnostics" hidden><div class="row"><button data-action="preflight">检查 KANO 执行通道</button><button data-action="diagnose">生成只读诊断</button><button data-action="download-diagnostics">导出诊断</button></div><pre id="diagnostics">等待检查。</pre></section>
+  <section data-panel="diagnostics" hidden><div class="row"><button data-action="preflight">检查 KANO 执行通道</button><button data-action="diagnose">生成只读诊断</button><button data-action="download-diagnostics">导出诊断</button></div><label for="network-target">内网 HTTP 服务（可选）</label><input id="network-target" placeholder="IPv4:端口" autocomplete="off"><button data-action="network-check">检测联网</button><pre id="diagnostics">等待检查。</pre></section>
   </section></div><div class="message" role="status" aria-live="polite">首次使用：安装资源 → 读取或导入配置 → 选择代理范围 → 保存并启动。</div>
   <dialog><h2 id="dialog-title"></h2><p id="dialog-text"></p><div class="row"><button id="cancel">取消</button><button class="primary" id="accept">继续</button></div></dialog>`;
   ui.append(shell);
@@ -43,7 +43,7 @@
   const report=(text,error=false)=>{$('.message').textContent=KTSHost.sanitize(text);$('.message').classList.toggle('error',error);};
   function controls(){
     const s=state.status,run=Boolean(s?.running);
-    $$('button[data-action]').forEach(b=>{const a=b.dataset.action;b.disabled=state.busy||(['save','restore','install','rollback','start'].includes(a)&&run)||(['save','validate','start','boot-on','boot-off','backup','backups','load','rollback','diagnose'].includes(a)&&!s?.installed)||(a==='start'&&(!s?.configured||(state.touched&&dirty())))||(a==='stop'&&!run);});
+    $$('button[data-action]').forEach(b=>{const a=b.dataset.action;b.disabled=state.busy||(['save','restore','install','rollback','start'].includes(a)&&run)||(['save','validate','start','boot-on','boot-off','backup','backups','load','rollback','diagnose','network-check'].includes(a)&&!s?.installed)||(a==='start'&&(!s?.configured||(state.touched&&dirty())))||(['stop','network-check'].includes(a)&&!run);});
     $('#dirty').textContent=state.touched&&dirty()?'有未保存修改':state.saved===null?'尚未载入':'已与设备同步';
   }
   function fill(p){$('input[value='+p.protocol+']').checked=true;$('#config').value=p.text;$('#sources').value=(p.sources||[]).join('\n');$('#network-mode').value=p.networkMode||((p.sources||[]).length?'sources':'tunnel');$('#lan-interface').value=p.lanInterface||'br0';$('#ipv6-mode').value=p.ipv6Mode||'block';state.saved=JSON.stringify(profile());state.touched=false;controls();}
@@ -69,6 +69,7 @@
     backups:listBackups,
     rollback:async()=>{if(!await confirm('回滚资源？','恢复上一份校验通过的资源，配置保持当前保存内容。'))return;await KTSHost.call('rollback');await refresh();report('资源已回滚。');},
     diagnose:async()=>{report('正在采集当前诊断，请稍候。');const started=performance.now();const result=await KTSHost.call('diagnose');state.diagnostics={...result,browserCapturedAt:new Date().toISOString(),requestDurationMs:Math.round(performance.now()-started)};$('#diagnostics').textContent=JSON.stringify(state.diagnostics,null,2);report('只读诊断完成，不包含配置密钥。');},
+    'network-check':async()=>{if(state.status?.networkCheck!==true)throw new Error('请先停止隧道并安装 / 更新设备后端，再重新启动检测。');let target=$('#network-target').value.trim();if(target.startsWith('http://')){const url=new URL(target);if(url.username||url.password||url.pathname!=='/'||url.search||url.hash)throw new Error('只填写内网 IPv4:端口，不包含登录信息或 API 路径。');target=url.host;}if(target&&!/^(?:\d{1,3}\.){3}\d{1,3}:\d{1,5}$/.test(target))throw new Error('内网 HTTP 服务格式应为 IPv4:端口。');report('正在检测 DNS、HTTPS 和内网 HTTP，约需 20 秒。');const started=performance.now();const result=await KTSHost.call('network-check',target);state.diagnostics={...result,browserCapturedAt:new Date().toISOString(),requestDurationMs:Math.round(performance.now()-started)};$('#diagnostics').textContent=JSON.stringify(state.diagnostics,null,2);report('联网检测完成，可导出诊断；该检测不包含已登录的 Codex 对话。');},
     'download-diagnostics':async()=>{if(!state.diagnostics)throw new Error('请先生成诊断。');download('tunnel-studio-diagnostics-'+(state.diagnostics.browserCapturedAt||'snapshot').replace(/[:.]/g,'-')+'.json',JSON.stringify(state.diagnostics,null,2));report('已导出上次采集的诊断快照；需要新数据请点击“生成只读诊断”。');},
     export:async()=>{if(!await confirm('导出含密钥的配置？','下载的 JSON 含私钥，请保存在可信位置。'))return;download('tunnel-studio-profile.json',JSON.stringify(profile(),null,2));report('已导出当前编辑内容。');},
     clear:async()=>{if(!await confirm('清空本页编辑？','只清空浏览器内存中的编辑内容，设备上已保存的配置仍保留。'))return;$('#config').value='';$('#sources').value='';state.touched=true;controls();report('编辑器已清空，设备配置未删除。');}

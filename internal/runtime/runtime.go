@@ -12,7 +12,7 @@ import (
 
 const Root = "/data/adb/kano-tunnel-studio"
 const Interface = "kts0"
-const Version = "0.1.5"
+const Version = "0.1.6"
 
 type Reply struct {
 	OK    bool   `json:"ok"`
