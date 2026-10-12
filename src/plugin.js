@@ -5,13 +5,18 @@
   let anchor;
   for(let n=0;n<60;n++){anchor=document.querySelector('.functions-container');if(anchor)break;await new Promise(r=>setTimeout(r,100));}
   if(!anchor)return;
-  const host=document.createElement('section');host.id=id;anchor.append(host);
+  const host=document.createElement('section');host.id=id;
+  // KANO clips this menu to the height of .collapse_box. The console must
+  // remain outside that measured region, including when the menu is closed.
+  const menu=anchor.closest('.kano_function_main')||anchor;
+  menu.insertAdjacentElement('afterend',host);
+  host.style.width='100%';host.style.minWidth='0';
   const ui=host.attachShadow({mode:'open'});
   const style=document.createElement('style');style.textContent=KTS_STYLE;ui.append(style);
   const shell=document.createElement('div');shell.className='studio';shell.dataset.mode='auto';
   shell.innerHTML=`
   <header class="head"><div class="brand"><span class="mark" aria-hidden="true">↗</span><div><div class="eyebrow">KANO / NETWORK</div><h1>Tunnel Studio</h1></div></div><select class="mode" aria-label="显示模式"><option value="auto">自动布局</option><option value="desktop">桌面模式</option><option value="phone">手机模式</option></select></header>
-  <div class="body"><nav aria-label="隧道管理"><button data-tab="overview" aria-selected="true">连接概览</button><button data-tab="profile" aria-selected="false">协议与配置</button><button data-tab="recovery" aria-selected="false">版本与恢复</button><button data-tab="diagnostics" aria-selected="false">只读诊断</button><div class="nav-foot">一个控制台<br>两种协议<br><br>v0.1.1 · ARM64</div></nav>
+  <div class="body"><nav aria-label="隧道管理"><button data-tab="overview" aria-selected="true">连接概览</button><button data-tab="profile" aria-selected="false">协议与配置</button><button data-tab="recovery" aria-selected="false">版本与恢复</button><button data-tab="diagnostics" aria-selected="false">只读诊断</button><div class="nav-foot">一个控制台<br>两种协议<br><br>v0.1.2 · ARM64</div></nav>
   <main>
   <section data-panel="overview"><div class="topline"><div><h2>让连接保持清晰。</h2><p class="muted">WireGuard 与 AmneziaWG，独立管理。</p></div><span class="badge" id="protocol-badge">未选择协议</span></div>
     <div class="status"><div><span class="muted"><span class="dot" id="dot"></span>本插件隧道</span><div class="big" id="connection">尚未读取状态</div><div class="hint" id="status-detail">点击刷新，检查设备资源和运行情况。</div></div><div class="row"><button data-action="refresh">刷新</button><button class="primary" data-action="start">启动</button><button data-action="stop">停止</button></div></div>
