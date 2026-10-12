@@ -1,0 +1,6 @@
+--- FAIL: TestEncryptedInteroperability (4.01s)
+    --- FAIL: TestEncryptedInteroperability/amneziawg-obfuscation (4.01s)
+        crypto_test.go:179: first packet lost; no retransmission allowed in this test
+FAIL
+FAIL	tunnelstudio.local/studio/tests	4.970s
+FAIL

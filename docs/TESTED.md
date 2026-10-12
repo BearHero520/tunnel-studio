@@ -1,0 +1,43 @@
+# 实测范围 — 2026-10-12
+
+## 已通过
+
+| 项目 | 环境/证据 |
+|---|---|
+| 配置、备份与回滚测试 | Windows Go 1.25 工具链；`go test ./... -count=1` |
+| 静态检查 | `go vet ./...`、单文件 `node --check` |
+| 宿主桥接测试 | Node：命令完成标记、失败退出、上传路径限制、shell 引号与密钥脱敏 |
+| 浏览器流程 | Chromium：桌面/手机、执行通道、启停确认、运行态控件、未保存编辑阻止启动、保存/校验失败、备份名称防 HTML 注入 |
+| 离线包 | 固定源码成功交叉编译 Android ARM64 CGO=0 ELF；gzip 后端内嵌单 JS；设备可直接执行 `version` |
+| WireGuard 互通 | 本项目标准模式 ↔ 固定官方 WireGuard Go，对称密钥协商、双向 IPv4/IPv6 数据逐字节比较 |
+| AmneziaWG 混淆 | 固定官方 AWG 代码，J/S/H/I 配置，真实 UDP 加密往返 |
+| AWG 3.x 安全扩展 | HeaderProtectionKey、ContentPaddingAddition、时序、RandomTrailers；真实 UDP 加密往返 |
+| 首次 S4 回归 | 未修改上游复现首次包失败；补丁后三种模式无需重传即成功 |
+| U30 Air ARM64 真机加密测试 | 将测试 ELF 推入 `/data/local/tmp`，普通 shell 执行；上述三种模式全部通过，总时长约 0.06 秒 |
+| Android shell 命令封装 | U30 Air 上真实执行只读 printf 脚本，随机退出标记正确 |
+
+加密测试使用内存 TUN 与真实本机 UDP sockets，另一端使用真实官方实现，检查解密后的数据完整性，并捕获 UDP 发送内容确保测试明文没有直接出现。它是协议测试，**不等于系统 TUN、路由、LAN 代理或公网端到端测试**。
+
+测试密钥每次临时生成，未读取或复制真实 WireGuard 配置、私钥、PSK、现有备份。
+
+## 本次设备只读发现
+
+- 型号 U30 Air，Android 13，`arm64-v8a`。公开报告不保留设备序列号。
+- 内核 `5.4.254-android12-9-g0da8253c44d7`。
+- `/dev/net/tun` -> `/dev/tun`，节点存在，SELinux 显示 Permissive。
+- `wg0` 正在运行。现有代理连通性由用户确认；本插件没有改动它。
+- 普通 `su` 不在 PATH；`/debug_ramdisk/su` 存在，但本次 ADB shell 的授权请求被拒绝。`adb root` 被 production build 拒绝。
+- KANO 包版本 4.1.5，root_shell 未登录请求返回 401。
+- 尝试查看 Magisk 界面时遇到修复环境并自动重启提示，已取消，**没有执行修复或重启**。
+- 另有一台 x86_64 Android 15 模拟器，与 U30 Air 分开识别，未把其结果当成 U30 Air 结果。
+
+## 尚未通过实际设备联调的项目
+
+1. 从已登录 KANO 页面完整导入、上传、安装本插件。
+2. 使用 KANO 已授权 root 通道创建/关闭真实 `kts0`。
+3. 实际 IPv4/IPv6 来源策略路由、转发、DNS 行为及现有 `wg0` 共存。
+4. 开机自启与重启后状态恢复。
+5. 实际设备升级/回滚与进程异常清理；现有验证限于代码、资源事务单测与 UI 流程。
+6. 与用户 BE88U 服务端的实际握手、公网代理、吞吐与长时间稳定性。
+
+本次没有向设备安装持久的插件资源、没有启用自启、没有更改设备防火墙、没有创建/删除网络接口或修改路由。测试 ELF 与只读桥接探针会在结束后清理。ADB 缺少 root 与 KANO 是否有 root 是两件不同的事，不能据此认定原有 WireGuard 不可用。

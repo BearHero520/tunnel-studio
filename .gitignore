@@ -1,0 +1,7 @@
+vendor-source/
+node_modules/
+work/
+*.exe
+test-results/
+__pycache__/
+*.pyc

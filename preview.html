@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tunnel Studio · 离线界面预览</title>
+<style>body{margin:20px;background:#e9ece5;font:14px system-ui;color:#254635}.preview-note{max-width:1180px;margin:auto;padding:10px;border:1px dashed #91a68e;border-radius:8px}</style>
+<p class="preview-note">离线界面预览 · 使用测试宿主，不连接真实设备；运行数字均为演示。实际安装请把 dist/tunnel-studio.js 导入已登录的 KANO。</p>
+<div class="functions-container"></div>
+<script src="tests/mock-kano.js"></script>
+<script>KTS_MOCK.installed=true;KTS_MOCK.profile={protocol:'amneziawg',text:'[Interface]\nPrivateKey = <示例占位，不可连接>\nAddress = 10.67.0.2/32',sources:[]};</script>
+<script src="dist/tunnel-studio.js"></script></html>

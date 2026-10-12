@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "checks": [
+    "desktop and phone layout",
+    "root bridge probe",
+    "explicit start confirmation",
+    "status counters",
+    "running controls",
+    "unsaved edits and imports prevent start",
+    "save and validation errors",
+    "backup names rendered as text"
+  ],
+  "pageErrors": []
+}

@@ -1,0 +1,9 @@
+=== RUN   TestEncryptedInteroperability
+=== RUN   TestEncryptedInteroperability/wireguard-to-official
+=== RUN   TestEncryptedInteroperability/amneziawg-obfuscation
+=== RUN   TestEncryptedInteroperability/amneziawg3-security
+--- PASS: TestEncryptedInteroperability (0.07s)
+    --- PASS: TestEncryptedInteroperability/wireguard-to-official (0.02s)
+    --- PASS: TestEncryptedInteroperability/amneziawg-obfuscation (0.02s)
+    --- PASS: TestEncryptedInteroperability/amneziawg3-security (0.03s)
+PASS

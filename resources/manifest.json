@@ -1,0 +1,27 @@
+{
+  "name": "Tunnel Studio",
+  "version": "0.1.0",
+  "target": "android/arm64",
+  "protocolModes": [
+    "wireguard",
+    "amneziawg"
+  ],
+  "backend": {
+    "name": "amneziawg-go",
+    "url": "https://github.com/amnezia-vpn/amneziawg-go.git",
+    "commit": "b5928efb6ca19f0153958460c3d141f04abc5c2e"
+  },
+  "wireguardTestPeer": {
+    "name": "wireguard-go",
+    "url": "https://github.com/WireGuard/wireguard-go.git",
+    "commit": "2631ce99a06f27120d581611cf125d68bc6aa565"
+  },
+  "binarySHA256": "7ddd67195c5aeaffe385bdc6e3b606c35c2aec9dc255d373b833cf64c80c1216",
+  "pluginSHA256": "b81f5e7d0ab0a47255337f4b31bfe6cf22da1c49df916b37f89358e39aaeb6e7",
+  "goVersion": "go1.25.0",
+  "patches": [
+    "Android missing-node fallback to /dev/tun",
+    "Refresh S4 after initial blocking TUN read"
+  ],
+  "notes": "WireGuard mode uses the standard-compatible AWG userspace backend; kernel WG interfaces are not adopted."
+}

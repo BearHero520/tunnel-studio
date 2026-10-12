@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.png -text
+resources/studio-arm64 -text
+*.patch -whitespace

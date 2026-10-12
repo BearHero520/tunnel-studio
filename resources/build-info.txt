@@ -1,0 +1,16 @@
+resources/studio-arm64: go1.25.0
+	path	tunnelstudio.local/studio/cmd/studio
+	mod	tunnelstudio.local/studio	(devel)	
+	dep	github.com/amnezia-vpn/amneziawg-go/v3	v3.1.20260828
+	=>	./vendor-source/amneziawg-go	(devel)	
+	
+	dep	golang.org/x/crypto	v0.42.0	h1:chiH31gIWm57EkTXpwnqf8qeuMUi0yekh6mT2AvFlqI=
+	dep	golang.org/x/net	v0.44.0	h1:evd8IRDyfNBMBTTY5XRF1vaZlD+EmWx6x8PkhR04H/I=
+	dep	golang.org/x/sys	v0.36.0	h1:KVRy2GtZBrk1cBYA7MKu5bEZFxQk4NIDV6RLVcC8o0k=
+	build	-buildmode=exe
+	build	-compiler=gc
+	build	-trimpath=true
+	build	CGO_ENABLED=0
+	build	GOARCH=arm64
+	build	GOOS=android
+	build	GOARM64=v8.0
