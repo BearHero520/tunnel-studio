@@ -39,7 +39,10 @@ func Lock(path string) (func(), error) {
 	}
 	if e = unix.Flock(fd, unix.LOCK_EX|unix.LOCK_NB); e != nil {
 		unix.Close(fd)
-		return nil, errors.New("另一个操作正在执行")
+		if errors.Is(e, unix.EWOULDBLOCK) || errors.Is(e, unix.EAGAIN) {
+			return nil, errOperationBusy
+		}
+		return nil, e
 	}
 	return func() { unix.Flock(fd, unix.LOCK_UN); unix.Close(fd) }, nil
 }
@@ -97,6 +100,7 @@ func Diagnose(v vault.Vault) map[string]any {
 	}
 	if _, e := v.Check(); e == nil {
 		m["owned"] = true
+		m["bootInfo"] = BootStatus(v)
 		status, statusErr := Call(v, "status")
 		m["status"] = status
 		if statusErr != nil {

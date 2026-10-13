@@ -3,7 +3,8 @@ const {execFileSync}=require('node:child_process');
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..');
 const fixed=fs.readFileSync(path.join(root,'dist/tunnel-studio.js'),'utf8');
-const legacy=execFileSync('git',['show','v0.1.0:dist/tunnel-studio.js'],{cwd:root,maxBuffer:8*1024*1024,encoding:'utf8'});
+// Pin the published regression by commit; retired release tags need not exist.
+const legacy=execFileSync('git',['show','c3af0e767027834db609d7c283db833371598c88:dist/tunnel-studio.js'],{cwd:root,maxBuffer:8*1024*1024,encoding:'utf8'});
 // KANO main.js customHead contract: DOMParser, clone styles, recreate scripts.
 async function importPlugin(page,source){
  return page.evaluate(head_text=>{

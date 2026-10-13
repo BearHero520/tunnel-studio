@@ -17,7 +17,7 @@ def build():
     # Preserve third-party permission notices even when only the JS is redistributed.
     notices=[('Tunnel Studio', (ROOT/'LICENSE').read_text(encoding='utf-8'))]
     notices += [(p.name,p.read_text(encoding='utf-8')) for p in sorted((ROOT/'licenses').glob('*.txt'))]
-    header='// Tunnel Studio 0.1.6 | Offline Android ARM64 | Built from pinned official sources\n/*\n'+ '\n\n'.join(name+'\n'+text for name,text in notices).replace('*/','* /')+'\n*/\n'
+    header='// Tunnel Studio 0.1.7 | Offline Android ARM64 | Built from pinned official sources\n/*\n'+ '\n\n'.join(name+'\n'+text for name,text in notices).replace('*/','* /')+'\n*/\n'
     script=header+'(()=>{\nconst KTS_RESOURCE='+json.dumps(resource,separators=(',',':'))+';\nconst KTS_STYLE='+json.dumps((ROOT/'src/style.css').read_text(encoding='utf-8'),ensure_ascii=False)+';\n'
     script+='\n'.join((ROOT/'src'/p).read_text(encoding='utf-8') for p in ('host.js','plugin.js'))+'\n})();\n'
     # KANO parses uploads as HTML and executes only extracted script elements.
@@ -26,7 +26,7 @@ def build():
         raise RuntimeError('Unsafe HTML script delimiter in bundled source')
     script='//<script>\n'+script+'//</script>\n'
     (ROOT/'dist/tunnel-studio.js').write_text(script,encoding='utf-8',newline='\n')
-    metadata={'name':'Tunnel Studio','version':'0.1.6','target':'android/arm64','protocolModes':['wireguard','amneziawg'],'backend':dict(zip(('name','url','commit'),SOURCES[0])),'wireguardTestPeer':dict(zip(('name','url','commit'),SOURCES[1])),'binarySHA256':digest,'pluginSHA256':hashlib.sha256(script.encode()).hexdigest(),'goVersion':'go1.25.0','patches':['Android missing-node fallback to /dev/tun','Refresh S4 after initial blocking TUN read'], 'notes':'WireGuard mode uses the standard-compatible AWG userspace backend; kernel WG interfaces are not adopted.'}
+    metadata={'name':'Tunnel Studio','version':'0.1.7','target':'android/arm64','protocolModes':['wireguard','amneziawg'],'backend':dict(zip(('name','url','commit'),SOURCES[0])),'wireguardTestPeer':dict(zip(('name','url','commit'),SOURCES[1])),'binarySHA256':digest,'pluginSHA256':hashlib.sha256(script.encode()).hexdigest(),'goVersion':'go1.25.0','patches':['Android missing-node fallback to /dev/tun','Refresh S4 after initial blocking TUN read'], 'notes':'WireGuard mode uses the standard-compatible AWG userspace backend; kernel WG interfaces are not adopted.'}
     (ROOT/'resources/manifest.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     (ROOT/'dist/SHA256SUMS').write_text(metadata['pluginSHA256']+'  tunnel-studio.js\n',encoding='ascii')
     info=subprocess.check_output(['go','version','-m',str(ROOT/'resources/studio-arm64')],text=True)

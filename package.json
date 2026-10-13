@@ -1,6 +1,6 @@
 {
   "name": "kano-tunnel-studio",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "scripts": {
     "build": "python tools/build.py",
@@ -9,7 +9,8 @@
     "test:import": "node tests/import.cjs",
     "test:layout": "node tests/layout.cjs",
     "test:reload": "node tests/reload.cjs",
-    "test:network": "node tests/network-check.cjs"
+    "test:network": "node tests/network-check.cjs",
+    "test:boot": "node tests/boot.cjs"
   },
   "devDependencies": {
     "playwright": "1.56.1"

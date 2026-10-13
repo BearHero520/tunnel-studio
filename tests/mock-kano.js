@@ -13,7 +13,7 @@ window.runShellWithRoot=async command=>{
  const reply=data=>exit({ok:true,data});
  if(command.includes(' install')){s.installed=true;return reply({release:'a'.repeat(64)})}
  const clean=command.replace(/'\\''/g,"'");const action=/studio' '(.*?)'/.exec(clean)?.[1];
- if(action==='status')return reply({installed:s.installed,autoProxy:!s.legacyBackend,networkCheck:!s.legacyBackend,running:s.running,configured:!!s.profile,protocol:s.profile?.protocol,boot:s.boot,release:{current:'a'.repeat(64),previous:'b'.repeat(64)},tunnel:{networkMode:s.profile?.networkMode||'tunnel',ipv6Mode:s.profile?.ipv6Mode||'',dnsRedirect:false,peers:s.running?[{rx_bytes:'10240',tx_bytes:'2048',last_handshake_time_sec:String(Math.floor(Date.now()/1000)-3)}]:[]}});
+ if(action==='status')return reply({installed:s.installed,autoProxy:!s.legacyBackend,networkCheck:!s.legacyBackend,running:s.running,configured:!!s.profile,protocol:s.profile?.protocol,boot:s.boot,bootInfo:s.bootInfo,release:{current:'a'.repeat(64),previous:'b'.repeat(64)},tunnel:{networkMode:s.profile?.networkMode||'tunnel',ipv6Mode:s.profile?.ipv6Mode||'',dnsRedirect:false,peers:s.running?[{rx_bytes:'10240',tx_bytes:'2048',last_handshake_time_sec:String(Math.floor(Date.now()/1000)-3)}]:[]}});
  if(action==='load')return reply(s.profile);
  if(action==='save-file'||action==='validate-file'){const path=/studio' '[^']+' '([^']+)'/.exec(clean)?.[1];const p=JSON.parse(s.uploads.get(path));if(!p.text.includes('PrivateKey'))return exit({ok:false,error:'PrivateKey 无效'},1);if(action==='save-file')s.profile=p;return reply({warnings:['仅隧道模式']})}
  if(action==='start'){s.running=true;return reply(null)}if(action==='stop'){s.running=false;return reply(null)}

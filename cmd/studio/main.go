@@ -73,6 +73,9 @@ func run(args []string) (any, error) {
 	if action == "serve" {
 		return nil, rt.Serve(v)
 	}
+	if action == "boot-start" {
+		return nil, rt.BootStart(v)
+	}
 	if action == "status" {
 		m := v.Summary()
 		m["version"] = rt.Version
@@ -87,8 +90,9 @@ func run(args []string) (any, error) {
 			m["protocol"] = p.Protocol
 			m["configured"] = true
 		}
-		_, e = os.Stat(rt.BootPath())
-		m["boot"] = e == nil
+		boot := rt.BootStatus(v)
+		m["boot"] = boot.Enabled
+		m["bootInfo"] = boot
 		_, je := os.Stat(v.Path("runtime/routes.json"))
 		m["recoveryRequired"] = s == nil && je == nil
 		return m, nil
@@ -122,29 +126,18 @@ func run(args []string) (any, error) {
 		if e != nil {
 			return nil, e
 		}
-		if _, e = os.Stat(rt.BootPath()); e == nil {
+		if rt.BootStatus(v).Enabled {
 			if e = rt.Boot(v, true); e != nil {
 				return nil, e
 			}
 		}
 		return map[string]string{"release": hash}, nil
-	case "start", "boot-start":
-		if action == "boot-start" {
-			r, e := v.Release()
-			if e != nil {
-				return nil, e
-			}
-			exe, e := os.Executable()
-			if e != nil {
-				return nil, e
-			}
-			hash, e := vault.Digest(exe)
-			if e != nil || hash != r.Current {
-				return nil, errors.New("自启资源已过时；请重新设置自启")
-			}
-		}
+	case "start":
 		return nil, rt.Start(v)
 	case "stop":
+		if e = rt.CancelBoot(v); e != nil {
+			return nil, e
+		}
 		if e = rt.Stopped(v); e == nil {
 			return nil, nil
 		}
@@ -234,7 +227,7 @@ func run(args []string) (any, error) {
 		if e = v.Rollback(); e != nil {
 			return nil, e
 		}
-		if _, e = os.Stat(rt.BootPath()); e == nil {
+		if rt.BootStatus(v).Enabled {
 			return nil, rt.Boot(v, true)
 		}
 		return nil, nil

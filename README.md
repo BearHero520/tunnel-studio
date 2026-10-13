@@ -1,17 +1,17 @@
 # Tunnel Studio
 
-KANO 的 WireGuard / AmneziaWG 双协议插件，**v0.1.6 联调预览版**。独立实现的管理页、Go 后端、网络事务与测试；旧 WireGuard 项目仅作为宿主行为参考，不修改旧仓库。
+KANO 的 WireGuard / AmneziaWG 双协议插件，**v0.1.7 联调预览版**。独立实现的管理页、Go 后端、网络事务与测试；旧 WireGuard 项目仅作为宿主行为参考，不修改旧仓库。
 
-- [下载单文件插件](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.6/tunnel-studio.js)
-- [完整源码包](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.6/tunnel-studio-0.1.6.zip)
-- [Raw JS](https://raw.githubusercontent.com/BearHero520/tunnel-studio/v0.1.6/dist/tunnel-studio.js)
-- [发行说明与校验文件](https://github.com/BearHero520/tunnel-studio/releases/tag/v0.1.6)
+- [下载单文件插件](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.7/tunnel-studio.js)
+- [完整源码包](https://github.com/BearHero520/tunnel-studio/releases/download/v0.1.7/tunnel-studio-0.1.7.zip)
+- [Raw JS](https://raw.githubusercontent.com/BearHero520/tunnel-studio/v0.1.7/dist/tunnel-studio.js)
+- [发行说明与校验文件](https://github.com/BearHero520/tunnel-studio/releases/tag/v0.1.7)
 
-## 从 v0.1.3 / v0.1.4 / v0.1.5 更新
+## 从 v0.1.3–v0.1.6 更新
 
 1. 在旧插件刷新状态，停止 Tunnel Studio 隧道。
 2. 在 KANO 插件管理删除旧 Tunnel Studio 网页插件项，导入新版，保存并刷新。
-3. 确认标题 v0.1.6，点击“安装 / 更新”。设备配置会保留。
+3. 确认标题 v0.1.7，点击“安装 / 更新”。设备配置会保留，已开启自启的安装会更新自启脚本。
 4. 页面会自动载入设备已保存配置，核对代理范围；按需选择“本机 + 热点”。U30 Air 热点接口为 br0；其他设备需核对。
 5. 检查配置的 AllowedIPs 和 DNS。默认阻止所选范围的外网 IPv6，避免在 IPv4 代理期间绕过隧道；需要 IPv6 时选择合适模式。
 6. 保存并确认流量接管设置，再启动。核对右侧**运行范围**、握手与实际网页访问；左侧未保存的选择不是运行状态。
@@ -34,6 +34,14 @@ KANO 的 WireGuard / AmneziaWG 双协议插件，**v0.1.6 联调预览版**。�
 
 IPv6 的“阻止外网”保留局域网、链路本地和隧道传输；“NAT66”需要内核 IPv6 NAT；“热点路由”只用于热点模式，要求服务器 Peer AllowedIPs、回程路由及出口支持 LAN IPv6 前缀，不支持自动接管本机 IPv6。没有 IPv6 Address/AllowedIPs 时不能启用 IPv6 代理。
 
+## 开机自启
+
+v0.1.7 与旧 WireGuard 插件使用相同的 KANO 入口 `/sdcard/ufi_tools_boot.sh`，仅增删带本插件所有者标记的一行，保留其他服务内容。私有启动脚本在 `/data/adb/kano-tunnel-studio/boot.sh`，执行前校验后端摘要。已有 Magisk `service.d` 目录时保留备用入口，两种入口不会重复启动隧道。
+
+**KANO 自启入口需要启用 KANO 高级功能。** 更新设备后端后，在连接概览重新点一次“开启”。自启等待 Android 完成开机、热点 IPv4 地址及隧道端点 DNS/外部路由就绪，每 10 秒检查；等待重试预算为 5 分钟，当前进行中的有界检查/启动可能增加结束耗时。等待期间可以刷新、关闭自启或手动停止。手动停止会取消本次开机的后续重试，下一次重启不受影响。
+
+连接概览区分“已登记”和本次开机的等待、成功、失败、超时。只读诊断包含 `bootInfo`；私有 `runtime/boot-status.json` 记录最近最多 32 次检查，不记录配置密钥。存在本次开机的未完成路由事务时停止重试，保留原有恢复保护。
+
 ## 网络资源与恢复
 
 - 独立接口 kts0；目录 /data/adb/kano-tunnel-studio，私有权限。
@@ -52,7 +60,7 @@ IPv6 的“阻止外网”保留局域网、链路本地和隧道传输；“NAT
 
 Go 配置/网络计划/事务测试、浏览器导入/安装模拟/双栏及明暗布局测试通过。Android x86_64 模拟器执行过真实 ip/iptables/ip6tables 规则与清理测试，入口使用未挂接测试链，不影响真实流量；不是完整公网测试。
 
-用户在 v0.1.4 / v0.1.5 上反馈部分网站、Codex 对话和持续通信异常。后续 v0.1.5 诊断证实热点双向流量通过，但不能确定连接失败阶段。**v0.1.6 修复 TCP MSS 返回方向的遗漏并增加实际联网检测，尚未证实已解决用户的 Codex 断线；吞吐、自启及长时间稳定性仍未验证。** 不把握手、计数或模拟测试等同于代理可用。
+用户已反馈 v0.1.6 恢复正常；该版本修复 TCP MSS 返回方向的遗漏并增加联网检测。v0.1.7 修复自启入口并增加等待、重试与诊断，已通过 Android x86_64 模拟器的实际 shell 启动、共享存储读写和摘要拒绝测试，尚未完成 U30 Air 真实断电重启验证。吞吐及长时间稳定性仍需实测，不把握手、计数或模拟测试等同于代理可用。
 
 ## 构建与测试
 
@@ -66,11 +74,12 @@ npm test
 npm run test:ui
 npm run test:layout
 npm run test:import
+npm run test:boot
 go test ./... -count=1
 go vet ./...
 python tools/pack.py
 ```
 
-HTML 导入回归需要 Git 历史中的 v0.1.0 标签（git fetch origin tag v0.1.0）。源码 zip 不包含 .git。Android 冒烟测试只在专用测试环境显式设置 KTS_POLICY_SMOKE=1 时执行，不能在实际用户设备随意启用。
+HTML 导入回归按固定历史提交读取 v0.1.0，不依赖已删除的旧标签；需要完整 Git 历史，源码 zip 不包含 .git。Android 冒烟测试只在专用测试环境显式设置 KTS_POLICY_SMOKE=1 时执行，不能在实际用户设备随意启用。
 
 历史 v0.1.0 导入恢复见 docs/RELEASE-v0.1.1.md；v0.1.1 容器裁剪修复见 docs/RELEASE-v0.1.2.md。

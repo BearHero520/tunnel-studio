@@ -1,6 +1,6 @@
 {
   "name": "Tunnel Studio",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "target": "android/arm64",
   "protocolModes": [
     "wireguard",
@@ -16,8 +16,8 @@
     "url": "https://github.com/WireGuard/wireguard-go.git",
     "commit": "2631ce99a06f27120d581611cf125d68bc6aa565"
   },
-  "binarySHA256": "df00b4bdf6b6ccc7ef89ea955698b7ff15962937eaa0ee13d1b53081d31be11f",
-  "pluginSHA256": "53abd721a0799ec7d9517237a608dcd2df233b028a917f1b6308897cb885b051",
+  "binarySHA256": "ea7f1e87d7350fcc22f3b07cfae09594a497963fae012b045a64bf1c1d6ddc7c",
+  "pluginSHA256": "3e0fd4cd5f5ed1e83d397ebd599f4623fdbdf43f989ab3de2c5ca3d2f8fb09f4",
   "goVersion": "go1.25.0",
   "patches": [
     "Android missing-node fallback to /dev/tun",
